@@ -55,41 +55,45 @@ in at least 4 of 5 tries.
 
 ---
 
-## 4. Something about your chunks
+## 4. Chunks end where thoughts end
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
-
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
-
-
+In a sample of 10 chunks taken at random from the index, at least 9 begin at
+the start of a sentence and end at the end of one. No chunk is cut mid-sentence
+at either edge.
 
 **Why this target:**
+My corpus is `campus_life`, which is 88 short documents, and the starter's
+800-character window leaves almost all of them uncut — indexing reports 88
+chunks from 88 documents. So the only places a chunk boundary can do damage are
+the handful of documents long enough to be split, and those are exactly the
+documents my longer questions draw on. Checking boundaries is therefore a
+sharper test of my chunker than checking average length, which the corpus would
+pass no matter what I wrote.
+
+I allowed one miss in ten rather than demanding a clean sweep because some of
+these documents end on a bare list item or a heading with no terminal
+punctuation, and a chunk ending there is intact even though it doesn't look it.
+One exception absorbs that without letting a genuinely broken split through.
 
 
 
 ---
 
-## 5. Your choice
+## 5. Nothing in the answer that wasn't in the chunks
 
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. It could be about
-     speed, about refusals, about a particular kind of question your corpus
-     handles badly, about source attribution being correct rather than merely
-     present — anything, as long as it names a number or an observable
-     outcome. -->
-
-
+For every answer produced, each factual claim can be traced to a sentence in
+one of the chunks that was retrieved for that question. I check by reading the
+answer beside the chunks the system actually pulled.
 
 **Why this target:**
+This is the failure that retrieval is supposed to prevent and doesn't always —
+the model fills a gap from its own training data, and the answer reads as
+confident and well-sourced while containing something that was never in the
+corpus. I set this at every answer rather than 4 of 5 because a single invented
+fact discredits the whole system in a way a single missed retrieval doesn't; a
+miss is visibly a miss, a fabrication isn't.
+
+
 
 
 
