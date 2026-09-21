@@ -27,8 +27,22 @@ CORPUS = os.getenv("AI201_CORPUS", "campus_life")
 # These are deliberately plain, generic numbers. Milestone 3 is where you
 # replace them with numbers that fit the documents you actually read.
 
-CHUNK_SIZE = 800        # characters per chunk
-CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
+# Measured first: campus_life is 88 documents, 179–550 characters, median 306.
+# 400 sits above the median and below the longest, so single-topic documents
+# stay whole and the handful of multi-topic housing write-ups split in two.
+# Splits land on paragraph breaks, so this is a target, not a hard cut.
+CHUNK_SIZE = 400        # target characters per chunk
+
+# Zero on purpose. Splits never cut a sentence, and every chunk repeats its
+# document's title line, which is the context a later chunk actually lacks.
+# See the Chunking Strategy section of README.md.
+CHUNK_OVERLAP = 0       # characters shared between neighbouring chunks
+
+# A chunk below this — measured as indexed, title line included — is merged
+# back into its neighbour rather than emitted alone. The corpus has paragraphs
+# as short as 36 characters; the median is 112, so a median paragraph plus its
+# title clears this bar and only genuine fragments get merged.
+MIN_CHUNK_SIZE = 140
 
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────

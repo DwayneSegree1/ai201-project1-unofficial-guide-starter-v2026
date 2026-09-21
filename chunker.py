@@ -80,24 +80,84 @@ def fallback_split(
     return chunks
 
 
+def _paragraphs(text: str) -> tuple[str, list[str]]:
+    """Split a document into its title line and its body paragraphs.
+
+    Every document in this corpus is a title, a blank line, then two to four
+    paragraphs. If one ever isn't, the whole text becomes the body and the
+    title comes back empty, which the caller handles.
+    """
+    blocks = [b.strip() for b in text.strip().split("\n\n") if b.strip()]
+    if len(blocks) < 2:
+        return "", blocks
+    return blocks[0], blocks[1:]
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Split documents at paragraph breaks, packing up to CHUNK_SIZE characters.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    My strategy for Milestone 3, chosen after measuring the corpus — the
+    reasoning is in README.md under Chunking Strategy. Three rules:
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
+      1. Never cut inside a paragraph. Paragraphs here are whole thoughts and
+         the documents are short enough that there's no reason to break one.
+      2. Pack paragraphs together until adding the next would pass CHUNK_SIZE.
+         Most documents fit in one chunk; the long multi-topic housing ones
+         come out as two.
+      3. Prepend the document's title line to every chunk. A chunk that says
+         "the heating is uneven" is useless without "Old Brewhouse" attached.
 
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    A trailing chunk below MIN_CHUNK_SIZE is merged back into the previous
+    one — the corpus has paragraphs as short as 36 characters, and those are
+    too thin to embed on their own.
     """
-    return fallback_split(documents)
+    size = config.CHUNK_SIZE
+    min_size = getattr(config, "MIN_CHUNK_SIZE", 0)
+
+    chunks: list[Chunk] = []
+    for doc in documents:
+        title, paragraphs = _paragraphs(doc.text)
+        if not paragraphs:
+            continue
+
+        # Group paragraphs into bodies of at most `size` characters.
+        bodies: list[list[str]] = []
+        current: list[str] = []
+        current_len = 0
+        for para in paragraphs:
+            # +2 for the blank line joining it to what's already there.
+            addition = len(para) + (2 if current else 0)
+            if current and current_len + addition > size:
+                bodies.append(current)
+                current, current_len = [para], len(para)
+            else:
+                current.append(para)
+                current_len += addition
+        if current:
+            bodies.append(current)
+
+        def assemble(body: list[str]) -> str:
+            text = "\n\n".join(body)
+            return f"{title}\n\n{text}" if title else text
+
+        # A thin tail is worse than a slightly oversized chunk. Measured on the
+        # assembled chunk, title included — that's what actually gets embedded.
+        if len(bodies) > 1 and len(assemble(bodies[-1])) < min_size:
+            bodies[-2].extend(bodies.pop())
+
+        for index, body in enumerate(bodies):
+            text = assemble(body)
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
