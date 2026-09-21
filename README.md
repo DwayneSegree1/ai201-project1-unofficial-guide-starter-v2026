@@ -317,7 +317,8 @@ genuinely somewhat similar to a question about money.
      "I used AI to help me code" is not.
 
      Milestone 5. -->
-     1. Getting the requirements setup took forever as i didnt have the correct python version to get the system running. I asked chat gpt questions regarding the requirements and how to troubleshoot them 
+**1.**
+     Getting the requirements setup took forever as i didnt have the correct python version to get the system running. I asked chat gpt questions regarding the requirements and how to troubleshoot them 
      
      Example: 
      The install request pop up but I can't click it 
@@ -325,17 +326,17 @@ genuinely somewhat similar to a question about money.
      Try this first
      Close the popup, then run:
      sudo xcode-select --install
-
-     2. I made an error and commited the API by adding it to example.env. after committing I asked clude to check if my commit was successfult and check if there are any errors. Clude cought that I committed the API key by mistake and help me ammend the commit. 
+**2.**
+      I made an error and commited the API by adding it to example.env. after committing I asked clude to check if my commit was successfult and check if there are any errors. Clude cought that I committed the API key by mistake and help me ammend the commit. 
      
      Example answer clude responded with:  
      Yes — commit 4b81e56 "Questions and Criteria Milestone" went through, working tree is clean. It's not pushed yet (main is ahead of origin/main by 1). That's lucky, because:
      Your real API key is in that commit
      .env.example:16 now contains your live Gemini key instead of the your_key_here placeholder:
 
-**1.**
 
-**2.**
+
+
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
