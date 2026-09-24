@@ -73,7 +73,7 @@ def main():
     parser.add_argument("--runs", type=int, default=3, help="runs per question (default 3)")
     parser.add_argument("--label", default="", help="a name for this run, e.g. 'before'")
     parser.add_argument("--corpus", default=None)
-    parser.add_argument("--variant", default="default")
+    parser.add_argument("--variant", default=config.INDEX_VARIANT)
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--threshold", type=float, default=None)
     args = parser.parse_args()
@@ -176,6 +176,20 @@ def check_out_of_scope(top_k, threshold, corpus, variant):
     return rows
 
 
+def _chunker_for(variant: str) -> str:
+    """Name the chunking function this index variant was actually built with.
+
+    The header used to hard-code `split_documents`, which was true until unit 2
+    put a second strategy in the store. A run log that names the wrong function
+    is worse than one that names none, because the README points at it as
+    evidence.
+    """
+    import chunker
+
+    strategy = chunker.STRATEGIES.get(variant)
+    return strategy.__name__ if strategy else f"unknown variant {variant!r}"
+
+
 def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, scored):
     config.RESULTS_DIR.mkdir(exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M")
@@ -190,7 +204,8 @@ def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, sc
         f"# Run log{f' — {args.label}' if args.label else ''}",
         "",
         f"- Produced by: `run_eval.py::main`",
-        f"- Retrieval: `store.py::search`, chunks from `chunker.py::split_documents`",
+        f"- Retrieval: `store.py::search`, chunks from "
+        f"`chunker.py::{_chunker_for(args.variant)}`",
         f"- Corpus: `{corpus}` (index variant `{args.variant}`)",
         f"- top-k: {top_k} · relevance cutoff: {threshold}",
         f"- Runs per question: {n}, caching off",

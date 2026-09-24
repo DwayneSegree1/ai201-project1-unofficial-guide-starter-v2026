@@ -160,6 +160,73 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
     return chunks
 
 
+def split_paragraphs(documents: list[Document]) -> list[Chunk]:
+    """
+    Strategy B for unit 2: one paragraph per chunk, title prepended, no packing.
+
+    This is the strategy I measured and rejected in Milestone 3. I rejected it
+    because 99 of the corpus's 183 body paragraphs are under 120 characters,
+    and a 90-character chunk reading "The good: the most characterful building
+    on campus" is thin and, stripped of its document, doesn't say which
+    building it's about.
+
+    Half of that objection no longer holds. Prepending the title line — which
+    `split_documents` does and the original paragraph experiment didn't — fixes
+    the "which building" half outright. Only the "too thin to embed" half is
+    still live, and that is a claim I asserted rather than tested.
+
+    The reason to test it now is a specific measured failure, not curiosity.
+    "cheapest place to live on campus" never retrieves
+    `housing_morrow_house.txt`, which is the document that answers it: the
+    sentence "cheapest housing tier by about $900 a year" shares a chunk with
+    the building's construction date, room types and a damp problem, and the
+    chunk's single vector is an average of all four. One fact per chunk is the
+    direct fix for a fact that got averaged away.
+
+    The cost is the other side of the same coin: 183 vectors instead of 91, and
+    broad questions like "what is Morrow House like?" now need several chunks
+    where one used to do. That trade is what the A/B in README.md measures.
+    """
+    chunks: list[Chunk] = []
+    for doc in documents:
+        title, paragraphs = _paragraphs(doc.text)
+        if not paragraphs:
+            continue
+        for index, para in enumerate(paragraphs):
+            text = f"{title}\n\n{para}" if title else para
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_paragraphs",
+                )
+            )
+    return chunks
+
+
+# The chunker each index variant is built with. `app.py index --variant NAME`
+# looks the name up here, so both strategies can sit in the store at once and
+# be queried against the same questions.
+STRATEGIES = {
+    "default": split_documents,
+    "paragraph": split_paragraphs,
+    "fallback": fallback_split,
+}
+
+
+def split_for_variant(documents: list[Document], variant: str = "default") -> list[Chunk]:
+    """Chunk `documents` with whichever strategy this index variant names."""
+    try:
+        strategy = STRATEGIES[variant]
+    except KeyError:
+        raise SystemExit(
+            f"No chunking strategy called {variant!r}. Known variants: "
+            + ", ".join(sorted(STRATEGIES))
+        ) from None
+    return strategy(documents)
+
+
 def describe(chunks: list[Chunk]) -> str:
     """A one-line summary, printed after indexing."""
     if not chunks:

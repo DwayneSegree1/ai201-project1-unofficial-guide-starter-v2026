@@ -47,7 +47,17 @@ MIN_CHUNK_SIZE = 140
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────
 
-TOP_K = 5               # how many chunks to pull back per question
+# Raised from 5 to 8 in unit 2, together with the paragraph chunker below.
+# Neither change fixes "cheapest place to live on campus" on its own: splitting
+# the fact into its own chunk moves it from unranked to rank 8, and only a
+# wider top-k then reaches it. The A/B is in README.md under The Improvement.
+TOP_K = 8               # how many chunks to pull back per question
+
+# Which chunking strategy the CLI indexes and queries by default. The names are
+# the keys of chunker.STRATEGIES. "default" is the Milestone 3 chunker and
+# "paragraph" is unit 2's one-fact-per-chunk replacement; both stay in the
+# store at once, so `--variant default` still queries the old index.
+INDEX_VARIANT = os.getenv("AI201_VARIANT", "paragraph")
 
 # The relevance gate. If the best chunk is further away than this, the system
 # refuses to answer instead of handing the model thin material.

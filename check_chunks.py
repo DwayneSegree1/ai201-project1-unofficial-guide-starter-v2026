@@ -20,7 +20,7 @@ import argparse
 import random
 
 from ingest import load_documents
-from chunker import split_documents
+from chunker import split_for_variant
 
 END_MARKS = ".?!\"'”’)"
 START_MARKS = "\"'“‘"
@@ -33,13 +33,15 @@ def check(chunk) -> tuple[bool, bool]:
     return (first.isupper() or first.isdigit() or first in START_MARKS), (last in END_MARKS)
 
 
-def sample_boundaries(corpus: str | None = None, n: int = 10, seed: int = 0):
+def sample_boundaries(corpus: str | None = None, n: int = 10, seed: int = 0,
+                      variant: str = "default"):
     """Draw `n` chunks at random and report which edges are clean."""
-    chunks = split_documents(load_documents(corpus))
+    chunks = split_for_variant(load_documents(corpus), variant)
     sample = random.Random(seed).sample(chunks, n)
 
     clean = 0
-    print(f"\nSeed {seed} — {n} chunks drawn at random from {len(chunks)}")
+    print(f"\nSeed {seed} — {n} chunks drawn at random from {len(chunks)} "
+          f"(variant {variant})")
     for c in sample:
         starts_ok, ends_ok = check(c)
         ok = starts_ok and ends_ok
@@ -59,10 +61,13 @@ def main():
     parser.add_argument("--corpus", default=None)
     parser.add_argument("--n", type=int, default=10, help="chunks per sample")
     parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
+    parser.add_argument("--variant", default="default",
+                        help="which chunking strategy to check (see chunker.STRATEGIES)")
     args = parser.parse_args()
 
     for seed in args.seeds:
-        sample_boundaries(corpus=args.corpus, n=args.n, seed=seed)
+        sample_boundaries(corpus=args.corpus, n=args.n, seed=seed,
+                          variant=args.variant)
 
 
 if __name__ == "__main__":

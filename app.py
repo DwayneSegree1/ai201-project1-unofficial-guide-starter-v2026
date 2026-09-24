@@ -32,18 +32,18 @@ def cmd_corpora(args):
 
 def cmd_index(args):
     from ingest import load_documents, describe as describe_docs
-    from chunker import split_documents, describe as describe_chunks
+    from chunker import split_for_variant, describe as describe_chunks
     from store import build_index
 
     corpus = args.corpus or config.CORPUS
-    print(f"Corpus: {corpus}")
+    print(f"Corpus: {corpus} (index variant {args.variant})")
 
     started = time.time()
 
     documents = load_documents(corpus)
     print(f"  loaded   {describe_docs(documents)}")
 
-    chunks = split_documents(documents)
+    chunks = split_for_variant(documents, args.variant)
     print(f"  chunked  {describe_chunks(chunks)}")
 
     print(f"  embedding {len(chunks)} chunks (first run downloads the model)...")
@@ -101,9 +101,11 @@ def _chunks_at(chunks, spec):
 def cmd_chunks(args):
     """Milestone 3. Print chunks so you can read them and paste them."""
     from ingest import load_documents
-    from chunker import split_documents
+    from chunker import split_for_variant
 
-    chunks = split_documents(load_documents(args.corpus or config.CORPUS))
+    chunks = split_for_variant(
+        load_documents(args.corpus or config.CORPUS), args.variant
+    )
 
     if args.from_doc:
         sample = _chunks_from_doc(chunks, args.from_doc)
@@ -328,8 +330,12 @@ def build_parser():
     parser.add_argument("--corpus", help="corpus folder name (see corpora/README.md)")
     parser.add_argument(
         "--variant",
-        default="default",
-        help="index variant, for holding two chunkings at once (unit 2)",
+        default=config.INDEX_VARIANT,
+        help=(
+            "index variant, for holding two chunkings at once (unit 2). "
+            f"Defaults to {config.INDEX_VARIANT!r}; pass 'default' for the "
+            "Milestone 3 chunker."
+        ),
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
