@@ -363,17 +363,113 @@ genuinely somewhat similar to a question about money.
 
      Milestone 1. -->
 
+Source run: `results/run_2026-09-23_1801_before.md`, produced by
+`run_eval.py::main` — 5 questions × 3 runs, caching off, cutoff 0.6, top-k 5.
+Criterion 4 isn't measured by any question, so it comes from
+`check_chunks.py::sample_boundaries` instead.
+
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 4. Chunks end where thoughts end | 9 of 10 | 10 of 10 | 10 of 10 | 10 of 10 | MET |
+| 5. Nothing in the answer that wasn't in the chunks | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+**What the Run columns mean, criterion by criterion.** They aren't all the same
+kind of number, and two of them can't vary.
+
+- **1, 2 and 5** are 5 questions scored per run, three separate runs with
+  caching off, so these are three genuinely independent measurements. Retrieval
+  is deterministic, so criterion 1 was always going to repeat; 2 and 5 are about
+  generated text and could have differed between runs, and didn't.
+- **3** is one deterministic pass over the five `OUT_OF_SCOPE` questions —
+  retrieval is fixed and the gate is a comparison against 0.6, so the same
+  number goes in all three columns.
+- **4** is three independent random samples of 10 chunks, seeds 0, 1 and 2, not
+  three runs of anything. Sampling is where the variation in that criterion
+  lives, so three different samples is the honest analogue of three runs.
+
+**Note on the pass/fail column in the results file.** `run_eval.py` marks three
+of my five questions `fail`, and none of those failures belongs to any criterion
+above. That column is `scorer.py::judge`, which tests whether the `expects`
+string from `questions.py` appears verbatim in the answer; my `expects` values
+for questions 2–5 are whole sentences copied out of the documents, and the model
+paraphrases. All three "failures" are correct, sourced answers worded
+differently — e.g. `expects` "The housing lottery is not random in the way most
+people assume" against the produced "The housing lottery is not entirely
+random." I read the answers rather than the column. The scorer is diagnosed
+below.
+
+### Real output
+
+**Criterion 1 and 2** — produced by `run_eval.py::main`, copied from
+`results/run_2026-09-23_1801_before.md`. The retrieved-sources line is the
+criterion 1 evidence; the `Source:` line inside the answer is criterion 2.
+
+```
+### How to appeal a grade — run 1
+
+- Best distance: 0.3220 (passed the gate)
+- Sources retrieved: admin_grade_appeals.txt, course_engl_205_exams.txt,
+  course_hist_118.txt, course_stat_150.txt, course_stat_150_exams.txt
+
+A grade appeal must start with the instructor and be raised within fifteen days
+of the grade posting before it can go to the department (admin_grade_appeals.txt).
+```
+
+**Criterion 3** — produced by `run_eval.py::check_out_of_scope`, cutoff 0.6:
+
+```
+Out-of-scope questions (the gate should refuse these):
+  refused  (best distance 0.825)  What is the capital of Mongolia?
+  refused  (best distance 0.934)  How do I change the oil in a diesel engine?
+  refused  (best distance 0.886)  Who won the 1994 World Cup?
+  refused  (best distance 0.844)  What is the recommended dosage of ibuprofen for a headache?
+  refused  (best distance 0.896)  How do I write a for loop in Rust?
+  -> gate refused 5 of 5
+```
+
+**Criterion 4** — produced by `check_chunks.py::sample_boundaries`
+(`python3 check_chunks.py`), one of the three samples:
+
+```
+Seed 2 — 10 chunks drawn at random from 91
+  ok   admin_library_holds.txt#0                    start='O' end='.'
+  ok   admin_printing_quota.txt#0                   start='O' end='.'
+  ok   admin_pass_fail_option.txt#0                 start='O' end='.'
+  ok   dining_kestrel_commons.txt#0                 start='K' end='.'
+  ok   course_cs_210_exams.txt#0                    start='C' end='.'
+  ok   orientation_what_matters.txt#0               start='W' end='.'
+  ok   course_phys_130_exams.txt#0                  start='P' end='.'
+  ok   course_hist_118.txt#0                        start='H' end='.'
+  ok   housing_old_brewhouse.txt#1                  start='O' end='.'
+  ok   course_econ_101_exams.txt#0                  start='E' end='.'
+  -> 10 of 10 clean at both edges
+```
+
+**Criterion 5** — the answer beside the chunk it came from. Answer produced by
+`generate.py::answer_from_chunks`, chunk by `chunker.py::split_documents`:
+
+```
+Answer (Is the housing lottery random — run 2):
+
+The housing lottery is not entirely random. Rising sophomores receive a
+randomly drawn number, but juniors and seniors are ordered by accumulated
+credit hours first, with random selection used only as a tie-breaker.
+
+Source: admin_housing_lottery.txt
+
+Retrieved chunk (admin_housing_lottery.txt#0):
+
+On the housing lottery
+
+The housing lottery is not random in the way most people assume. Rising
+sophomores get a number drawn at random, but juniors and seniors are ordered by
+accumulated credit hours first, and only tie-break randomly. That means a
+senior who took summer courses reliably beats a senior who didn't. Numbers come
+out the second week of March and selection runs over four evenings.
+```
 
 ## Verdicts
 
@@ -388,11 +484,11 @@ genuinely somewhat similar to a question about money.
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunks contain the answer — 4 of 5 | **MET** | 5 of 5, three runs out of three. I deliberately did not read this off the `pass`/`fail` column, which says 2 of 5 — that column is the scorer checking answer wording, and criterion 1 is about retrieval. I checked the `Sources retrieved` line for each question and then opened the document it named: `admin_campus_jobs_and_financial_aid`, `admin_declaring_a_major`, `admin_grade_appeals`, `admin_housing_lottery` and `admin_study_abroad` each contain the answer in one sentence, and none of the five is long enough to be split, so the retrieved chunk is the whole document. |
+| 2 | Every answer names a source — 5 of 5 | **MET** | 15 of 15 answers across the three runs name a `.txt` file, and in every case it is the document the answer actually came from rather than one of the other four retrieved. The close call was formatting, not sourcing: the model alternates between a trailing `Source: admin_grade_appeals.txt` line and an inline `(admin_grade_appeals.txt)` citation between runs. I counted both, because the criterion says the answer names a source, not that it names it in a fixed place. |
+| 3 | Gate stops out-of-corpus questions — 4 of 5 | **MET** | 5 of 5 refused at cutoff 0.6. The nearest miss is nowhere near: the closest out-of-scope question scores 0.825, which is 0.225 clear of the cutoff, so this is not a result that could flip on a re-run. I am recording it as MET against the criterion as written while noting that unit 1 already established the criterion is easy — these five questions are about Mongolia and diesel engines, and the campus questions my corpus doesn't cover (gym hours at 0.487, tuition at 0.536) go straight through the gate. |
+| 4 | Chunks end where thoughts end — 9 of 10 | **MET** | 10 of 10 on three independent random samples, seeds 0, 1 and 2, via `check_chunks.py`. The judgment call is the leading edge: every chunk opens with the document's title line, which is a heading with no sentence structure at all. I counted that as a clean start because the criterion's actual test is "no chunk is cut mid-sentence at either edge", and a title line is where the document begins, not a severed sentence. The one allowance I wrote into the criterion — documents ending on a bare list item — never got used; nothing in the three samples ended on anything but a full stop. I also checked the only three documents the chunker splits (Old Brewhouse, Morrow House, Innisfree Hall) directly rather than trusting the sample to reach them, since those are the only places a boundary can do damage; all six of those chunks land on paragraph breaks. |
+| 5 | Nothing in the answer that wasn't in the chunks — every answer | **MET** | I read all 15 answers beside the chunk each one cited. Every claim traces: "fifteen days", "end of your second semester", "October for the following academic year", "ordered by accumulated credit hours first". The one that needed a decision is the work-study answer, which opens with "No," — that word appears nowhere in the chunk. I counted it as traced because it restates the chunk's "don't count against your financial aid" as a yes/no, which is a rephrasing of the retrieved sentence rather than a fact from outside it. The rest of the checking was easy in a way that is worth being honest about: all five answers stayed inside a single short document and none tried to combine two chunks, which is the case where this criterion would actually be hard to judge. |
 
 ## Diagnoses
 
